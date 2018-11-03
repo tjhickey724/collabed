@@ -13,10 +13,9 @@ function getFontSize(){
 
 fontSize = getFontSize()
 
-clearB.addEventListener('click', (event)=>{
-  console.log("in clearB event listener")
-  clearCanvas()
-})
+
+mset.width = window.innerWidth*0.9;
+mset.height = window.innerHeight/2;
 
 function clearCanvas(){
   const ctx = mset.getContext('2d')
@@ -25,13 +24,6 @@ function clearCanvas(){
 }
 
 
-writeB.addEventListener('click', (event) => {
-    console.log("hello goodly world")
-    const ctx = mset.getContext('2d')
-    ctx.font = '12pt courier'
-    ctx.fillStyle='black'
-    ctx.fillText("hello goodly world",0,40)
-  })
 
 let state = {text:[""],cursor:[0,0]}
 
