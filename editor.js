@@ -2,6 +2,9 @@
   I need to revise the redraw Canvas to use the FontMetrics
   and draw all of the lines. This should be pretty easy to do!
 */
+const fonttype="12pt courier"
+const fontColor = "black"
+
 const allLetters = "!@#{$%^&*()_+-={}|[]\\:\";'<>?,./~`}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
 function getFontSize(){
@@ -30,7 +33,7 @@ let state = {text:[""],cursor:[0,0]}
 // here is how we can get the key which is pressed
 mset.addEventListener('keydown', function(event) {
     console.log("keydown event"); console.dir(event);
-    addKeyPress(event.key,state);
+    addKeyPress(event);
     redrawCanvas();
         });
 
@@ -47,10 +50,18 @@ mset.addEventListener('mousedown', function(event){
 });
 
 
-function addKeyPress(key){
-  console.log(key)
-  if (key=='ArrowLeft'){
-    console.log('moving left')
+function addKeyPress(event){
+  const key = event.key
+  //console.log(key)
+  if (event.ctrlKey){
+    console.log("hit the ctrl key ")
+    console.dir(event)
+    return
+    // process ^F ^B ^N ^P to move cursor ...
+    // ^A beginning of line ^E end of line
+    // ^D delete next character
+  } else if (key=='ArrowLeft'){
+    //console.log('moving left')
     if (state.cursor[1]>0){
       const lineLen = state.text[state.cursor[0]].length
       if (state.cursor[1]>lineLen){
@@ -65,7 +76,7 @@ function addKeyPress(key){
     }
     return
   } else if (key=='ArrowRight'){
-    console.log('moving right')
+    //console.log('moving right')
     if (state.cursor[1]<state.text[state.cursor[0]].length){
       state.cursor[1]++;
     } else {
@@ -77,22 +88,19 @@ function addKeyPress(key){
 
     return
   } else if (key=='ArrowUp'){
-    console.log('moving up')
+    //console.log('moving up')
     if (state.cursor[0]>0){
       state.cursor[0]--;
-    } else if (state.cursor[1]>0){
-      state.cursor[1]--
-      state.cursor[0] = state.text[state.cursor[1]].length
     }
     return
   } else if (key=='ArrowDown'){
-    console.log('moving down')
+    //console.log('moving down')
     if (state.cursor[0]<state.text.length-1){
       state.cursor[0]++;
     }
     return
   } else if (key=='Backspace'){
-    console.log('backspace')
+    //console.log('backspace')
     removePrevChar()
     // remove the character at the current position!!!
     return
@@ -100,14 +108,15 @@ function addKeyPress(key){
     insertCRLF()
     return
   } else if (allLetters.indexOf(key)<0) {
-    console.log("skipping the key "+key);
+    //console.log("skipping the key "+key);
     return
-  }
-  console.log("adding the key "+key)
+  } else {
+  //console.log("adding the key "+key)
 
-  printState()
+  //printState()
   insertKey(key)
-  printState()
+  //printState()
+  }
 }
 
 function removePrevChar(){
@@ -131,32 +140,23 @@ function removePrevChar(){
 
 }
 function insertCRLF(){
-  console.log('moving to new line!!')
-  console.log(JSON.stringify(state))
-  if (state.cursor[1]>=state.text[state.cursor[0]].length){
-    state.cursor[0]++;
-    state.cursor[1]=0;
-    const newrow =state.cursor[0];
-    console.log(JSON.stringify(state.text))
-    state.text.splice(newrow,0,"")
-    console.log(JSON.stringify(state.text))
-    //state.text = state.text.slice(0,newrow).concat([""]).concat(state.text.slice(newrow))
-    console.log(JSON.stringify([state,newrow]))
-  } else {
-    const newrow =state.cursor[0]
-    const pos = state.cursor[1]
-    const line = state.text[newrow]
-    console.log("CRLF in middle of line!")
-    console.log(JSON.stringify([newrow, pos,line]))
-    console.log(JSON.stringify(state.text))
-    state.text.splice(newrow,1,
-      line.substring(0,pos),line.substring(pos))
-    state.cursor[0]++;
-    state.cursor[1]=0;
-    console.log(JSON.stringify(state.text))
-    //state.text = state.text.slice(0,newrow).concat([""]).concat(state.text.slice(newrow))
-    console.log(JSON.stringify([state,newrow]))
-  }
+  //console.log('moving to new line!!')
+  //console.log(JSON.stringify(state))
+
+  const newrow =state.cursor[0]
+  const pos = state.cursor[1]
+  const line = state.text[newrow]
+  //console.log("process CRLF!")
+  //console.log(JSON.stringify([newrow, pos,line]))
+  //console.log(JSON.stringify(state.text))
+  state.text.splice(newrow,1,
+    line.substring(0,pos),line.substring(pos))
+  state.cursor[0]++;
+  state.cursor[1]=0;
+  //console.log(JSON.stringify(state.text))
+  //state.text = state.text.slice(0,newrow).concat([""]).concat(state.text.slice(newrow))
+  //console.log(JSON.stringify([state,newrow]))
+
 
 }
 
@@ -202,7 +202,7 @@ function drawCursor(){
   ctx.fillStyle='black'
   const text = ctx.measureText(first)
   const start = first.length*fontSize.width/letters.length
-  const baseline = state.cursor[0]*fontSize.leading+fontSize.descent
+  const baseline = state.cursor[0]*fontSize.leading+2*fontSize.descent
   const topline = fontSize.leading
   console.log(JSON.stringify([start,baseline,topline]))
   ctx.fillRect(start,baseline, 1,topline)
