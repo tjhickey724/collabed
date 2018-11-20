@@ -2,14 +2,16 @@
   I need to revise the redraw Canvas to use the FontMetrics
   and draw all of the lines. This should be pretty easy to do!
 */
-const fonttype="12pt courier"
+console.log("In editor.js!!")
+
+const fonttype="18pt courier"
 const fontColor = "black"
 
 const allLetters = "!@#{$%^&*()_+-={}|[]\\:\";'<>?,./~`}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
 function getFontSize(){
   const ctx = mset.getContext('2d')
-  ctx.font = '12pt courier'
+  ctx.font = fonttype
   ctx.fillStyle='black'
   return ctx.measureText(letters);
 }
@@ -18,7 +20,10 @@ fontSize = getFontSize()
 
 
 mset.width = window.innerWidth*0.9;
-mset.height = window.innerHeight/2;
+mset.height = window.innerHeight*0.9;
+numRows = Math.floor(mset.height/fontSize.leading);
+numCols = Math.floor(mset.width/(fontSize.width/letters.length))
+console.log("rows:"+numRows+"  cols:"+numCols)
 
 function clearCanvas(){
   const ctx = mset.getContext('2d')
@@ -28,7 +33,11 @@ function clearCanvas(){
 
 
 
-let state = {text:[""],cursor:[0,0]}
+let state =
+   {text:[""],cursor:[0,0],
+    rowOffset:0,
+    colOffset:0,
+    rows:numRows,cols:numCols}
 
 // here is how we can get the key which is pressed
 mset.addEventListener('keydown', function(event) {
@@ -40,8 +49,8 @@ mset.addEventListener('keydown', function(event) {
 // here is how we can get the position of the mouseclick
 mset.addEventListener('mousedown', function(event){
     console.log("mousedown event"); console.dir(event);
-    let row = Math.floor(event.offsetY/fontSize.leading)
-    let col = Math.round(event.offsetX/(fontSize.width/letters.length))
+    let row = Math.floor(event.offsetY/fontSize.leading)+state.rowOffset
+    let col = Math.round(event.offsetX/(fontSize.width/letters.length)) + state.colOffset
     console.log("position="+row+":"+col)
     row = Math.min(row,state.text.length-1)
     col = Math.min(col,state.text[row].length)
@@ -175,14 +184,33 @@ function redrawCanvas(){
   clearCanvas()
   console.log("drawing text on canvas: "+JSON.stringify(state.text))
   const ctx = mset.getContext('2d')
-  ctx.font = '12pt courier'
+  ctx.font = fonttype
   ctx.fillStyle='black'
 
-  for(i=0; i<state.text.length; i++){
-    const line =state.text[i]
+  if ((state.cursor[0]<state.rowOffset)  ) {
+    state.rowOffset = state.cursor[0]-5;
+    state.rowOffset = Math.max(state.rowOffset, 0);
+  } else if (state.cursor[0]>= state.rowOffset+state.rows){
+    state.rowOffset += 5;
+  }
+
+  if ((state.cursor[1]<state.colOffset)  ) {
+    state.colOffset = state.cursor[1]-5;
+    state.colOffset = Math.max(state.colOffset, 0);
+  } else if (state.cursor[1]>= state.colOffset+state.cols){
+    state.colOffset = state.cursor[1]-(state.cols-5);
+    state.colOffset = Math.max(state.colOffset,0)
+  }
+
+  console.log(JSON.stringify([state,state.rowOffset]))
+  var rowEnd = Math.min(state.text.length,state.rows+state.rowOffset)
+  console.log("rowStart = "+state.rowOffset+" rowEnd = "+rowEnd)
+
+  for(i=state.rowOffset; i< rowEnd ; i++){
+    const line =state.text[i].substring(state.colOffset,state.colOffset+state.cols+5)
     const text = ctx.measureText(line)
     const start = 0
-    const baseline = (1+i)*fontSize.leading+fontSize.descent
+    const baseline = (1+i-state.rowOffset)*fontSize.leading+fontSize.descent
     const topline = fontSize.leading
     ctx.fillText(line,start,baseline)
   }
@@ -201,9 +229,9 @@ function drawCursor(){
   const ctx = mset.getContext('2d')
   ctx.fillStyle='black'
   const text = ctx.measureText(first)
-  const start = first.length*fontSize.width/letters.length
-  const baseline = state.cursor[0]*fontSize.leading+2*fontSize.descent
+  const start = (first.length-state.colOffset)*fontSize.width/letters.length
+  const baseline = (state.cursor[0]-state.rowOffset)*fontSize.leading+2*fontSize.descent
   const topline = fontSize.leading
-  console.log(JSON.stringify([start,baseline,topline]))
+  //console.log(JSON.stringify([start,baseline,topline]))
   ctx.fillRect(start,baseline, 1,topline)
 }
