@@ -4,36 +4,77 @@
 */
 console.log("In editor.js!!")
 
-const fonttype="18pt courier"
+
 const fontColor = "black"
+let fonttype = "32pt Courier"
+let fontNumericSize = "32"
 
 const allLetters = "!@#{$%^&*()_+-={}|[]\\:\";'<>?,./~`}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"
+
+mset.style["font-size"]="40"
+
+let ctx = null;
+let charWidth = 100;
+let lineSep = 10
+let lineHeight=20
+let lineDescent = 2
+let state={}
+
 function getFontSize(){
-  const ctx = mset.getContext('2d')
-  ctx.font = fonttype
+
+  ctx = mset.getContext('2d')
+  charWidth = ctx.measureTextWidth(letters).width/letters.length
+  console.log(mset.style["font-size"])
+  //ctx.font = "32px courier"
+  console.log(fontNumericSize)
+  fontName = fontNumericSize+"px courier"
+  console.log("fontname is "+fontName)
+  ctx.font = fontName
+  //ctx.font = fontSize+"px courier"
+  console.log(ctx.font)
+  mset.style["font-size"]=fontNumericSize
+  console.log(mset.style["font-size"])
   ctx.fillStyle='black'
-  return ctx.measureText(letters);
+  fontSize = ctx.measureText(letters)
+  lineSep = Math.round(fontSize.height*0.5) // additional distance between lines ...
+  lineHeight = fontSize.height+lineSep //
+  lineDescent = fontSize.descent
+
+  numRows = Math.floor(mset.height/lineHeight);
+  numCols = Math.floor(mset.width/(charWidth))
+
+  state.cols = numCols
+  state.rows = numRows
+
+  //return ctx.measureText(letters);
 }
 
 fontSize = getFontSize()
+console.log('fontSize is ')
+console.dir(fontSize)
+console.log("font is "+ctx.font)
+
+
+
+
 
 
 mset.width = window.innerWidth*0.9;
 mset.height = window.innerHeight*0.9;
-numRows = Math.floor(mset.height/fontSize.leading);
-numCols = Math.floor(mset.width/(fontSize.width/letters.length))
+numRows = Math.floor(mset.height/lineHeight);
+numCols = Math.floor(mset.width/(charWidth))
 console.log("rows:"+numRows+"  cols:"+numCols)
 
 function clearCanvas(){
   const ctx = mset.getContext('2d')
   ctx.fillStyle='white'
-  ctx.fillRect(0,0,1000,1000)
+  ctx.fillRect(0,0,window.innerWidth,window.innerHeight)
 }
 
 
 
-let state =
+state =
    {text:[""],cursor:[0,0],
     rowOffset:0,
     colOffset:0,
@@ -49,8 +90,8 @@ mset.addEventListener('keydown', function(event) {
 // here is how we can get the position of the mouseclick
 mset.addEventListener('mousedown', function(event){
     console.log("mousedown event"); console.dir(event);
-    let row = Math.floor(event.offsetY/fontSize.leading)+state.rowOffset
-    let col = Math.round(event.offsetX/(fontSize.width/letters.length)) + state.colOffset
+    let row = Math.floor(event.offsetY/lineHeight)+state.rowOffset
+    let col = Math.round(event.offsetX/(charWidth)) + state.colOffset
     console.log("position="+row+":"+col)
     row = Math.min(row,state.text.length-1)
     col = Math.min(col,state.text[row].length)
@@ -180,11 +221,12 @@ function insertKey(key){
 }
 
 function redrawCanvas(){
+  getFontSize()
   console.log("clear Canvas");
   clearCanvas()
   console.log("drawing text on canvas: "+JSON.stringify(state.text))
   const ctx = mset.getContext('2d')
-  ctx.font = fonttype
+  //ctx.font = fonttype
   ctx.fillStyle='black'
 
   if ((state.cursor[0]<state.rowOffset)  ) {
@@ -210,8 +252,8 @@ function redrawCanvas(){
     const line =state.text[i].substring(state.colOffset,state.colOffset+state.cols+5)
     const text = ctx.measureText(line)
     const start = 0
-    const baseline = (1+i-state.rowOffset)*fontSize.leading+fontSize.descent
-    const topline = fontSize.leading
+    const baseline = (1+i-state.rowOffset)*lineHeight+lineDescent
+    const topline = lineHeight
     ctx.fillText(line,start,baseline)
   }
 
@@ -228,10 +270,16 @@ function drawCursor(){
   const first = line.substring(0,state.cursor[1])
   const ctx = mset.getContext('2d')
   ctx.fillStyle='black'
-  const text = ctx.measureText(first)
-  const start = (first.length-state.colOffset)*fontSize.width/letters.length
-  const baseline = (state.cursor[0]-state.rowOffset)*fontSize.leading+2*fontSize.descent
-  const topline = fontSize.leading
+
+
+  const visibleColumn = (first.length-state.colOffset)
+
+  const visibleRow = (state.cursor[0]-state.rowOffset)
+
+
+  const start = visibleColumn*charWidth
+  const baseline = visibleRow*lineHeight+lineSep+lineDescent
+  const topline = lineHeight-lineSep+lineDescent+1
   //console.log(JSON.stringify([start,baseline,topline]))
   ctx.fillRect(start,baseline, 1,topline)
 }
