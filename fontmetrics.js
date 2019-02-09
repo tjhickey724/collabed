@@ -33,6 +33,8 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 **/
+//console.log("in fontmetrics.js")
+
 (function(){
   var NAME = "FontMetrics Library"
   var VERSION = "1-2012.0121.1300";
