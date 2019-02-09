@@ -33,7 +33,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 **/
-console.log("in fontmetrics.js")
+//console.log("in fontmetrics.js")
 
 (function(){
   var NAME = "FontMetrics Library"
