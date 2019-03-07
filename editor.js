@@ -4,11 +4,25 @@
 */
 console.log("In editor.js!!!!!")
 
+class TextWindow{
+  /**
+    This class will represent a text object and a window onto that text object
+  **/
+  constructor(ddll){
+    this.text = [""]
+    this.cursor = [0,0]
+    this.rowOffset=0
+    this.colOffset=0
+    this.rows = 10
+    this.cols = 80
+  }
+}
+
 class CanvasEditor{
 
-  constructor(mset){
+  constructor(mset,textWindow){
     this.msetCanvas = mset
-
+    this.textWindow = textWindow
 
     this.fontColor = "black"
     this.fonttype = "32pt Courier"
@@ -38,7 +52,8 @@ class CanvasEditor{
 
 
     this.state =
-       {text:[""],cursor:[0,0],
+       {text:[""],
+        cursor:[0,0],
         rowOffset:0,
         colOffset:0,
         rows:numRows,cols:numCols}
@@ -261,4 +276,5 @@ class CanvasEditor{
 
 }
 
-const ed1 = new CanvasEditor(mset)
+const tw = new TextWindow("dummy DDLL")
+const ed1 = new CanvasEditor(mset,tw)
