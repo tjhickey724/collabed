@@ -4,6 +4,20 @@
 */
 console.log("In editor.js!!!!!")
 
+class TextDoc{
+  /**
+    This class will represent a window onto the text object
+  **/
+  constructor(){
+    this.text = [""]
+    this.cursor = [0,0]
+    this.rowOffset=0
+    this.colOffset=0
+    this.rows = numRows
+    this.cols = numCols
+  }
+}
+
 class CanvasEditor{
 
   constructor(mset){
