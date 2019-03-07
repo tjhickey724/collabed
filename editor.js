@@ -9,6 +9,12 @@ class TextWindow{
     This class will represent a text object and a window onto that text object
   **/
   constructor(ddll){
+    this.ddll = ddll
+    this.firstWindowChar = 0
+    this.lastWindowChar = 0
+    // whenever the ddll changes due to another user, then
+    // make the corresponding change to this.text and redraw the window.
+
     this.text = [""]
     this.cursor = [0,0]
     this.rowOffset=0
@@ -16,13 +22,31 @@ class TextWindow{
     this.rows = 10
     this.cols = 80
   }
+
+  setRows(rows){
+    this.rows = rows
+    console.log("setting rows to "+rows)
+  }
+
+  setCols(cols){
+    this.cols=cols
+    console.log("setting cols to "+cols)
+  }
+
+  insertChar(row,col){
+
+  }
+
+  deleteChar(row,col){
+
+  }
 }
 
 class CanvasEditor{
 
   constructor(mset,textWindow){
     this.msetCanvas = mset
-    this.textWindow = textWindow
+    this.state = textWindow
 
     this.fontColor = "black"
     this.fonttype = "32pt Courier"
@@ -50,13 +74,9 @@ class CanvasEditor{
     let numRows = Math.floor(this.msetCanvas.height/this.lineHeight);
     let numCols = Math.floor(this.msetCanvas.width/(this.charWidth))
 
+    this.state.setRows(numRows)
+    this.state.setCols(numCols)
 
-    this.state =
-       {text:[""],
-        cursor:[0,0],
-        rowOffset:0,
-        colOffset:0,
-        rows:numRows,cols:numCols}
 
     let theState = this.state
 
