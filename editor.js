@@ -9,13 +9,10 @@ class TextWindow{
     This class will represent a text object and a window onto that text object
   **/
   constructor(ddll){
-    this.ddll = ddll
-    this.firstWindowChar = 0
-    this.lastWindowChar = 0
-    // whenever the ddll changes due to another user, then
-    // make the corresponding change to this.text and redraw the window.
-
+    this.string = ""
     this.text = [""]
+    this.windowOffset = 0  // the position of 1st visible character in the windowOffset
+    this.lastWindowOffset = 0
     this.cursor = [0,0]
     this.rowOffset=0
     this.colOffset=0
@@ -23,30 +20,58 @@ class TextWindow{
     this.cols = 80
   }
 
-  setRows(rows){
+  setRowsCols(rows,cols){
     this.rows = rows
-    console.log("setting rows to "+rows)
+    this.cols = cols
   }
 
-  setCols(cols){
-    this.cols=cols
-    console.log("setting cols to "+cols)
+  getRowOffset(){
+    return this.rowOffset
   }
 
-  insertChar(row,col){
-
+  getColOffset(){
+    return this.colOffset
   }
 
-  deleteChar(row,col){
-
+  getLastRow(){
+    return this.text.length-1
   }
+
+  getRowLength(row){
+    return this.text[row].length
+  }
+
+  setCursor(row,col){
+    this.cursor = [row,col]
+  }
+
+  getCurrentRow(){
+    return this.cursor[0]
+  }
+
+  setCurrentRow(row){
+    this.cursor[0] = row
+  }
+
+  getCurrentCol(){
+    return this.cursor[1]
+  }
+
+  setCurrentCol(col){
+    this.cursor[1]= col
+  }
+
+  getCurrentLineLength(){
+    return this.text[this.cursor[0]].length
+  }
+
 }
 
 class CanvasEditor{
 
   constructor(mset,textWindow){
     this.msetCanvas = mset
-    this.state = textWindow
+    this.textWindow = textWindow
 
     this.fontColor = "black"
     this.fonttype = "32pt Courier"
@@ -62,7 +87,6 @@ class CanvasEditor{
     this.lineSep = 10
     this.lineHeight=20
     this.lineDescent = 2
-    this.state={}
     let msetCE = this
 
     this.fontSize = this.getFontSize()
@@ -74,9 +98,18 @@ class CanvasEditor{
     let numRows = Math.floor(this.msetCanvas.height/this.lineHeight);
     let numCols = Math.floor(this.msetCanvas.width/(this.charWidth))
 
-    this.state.setRows(numRows)
-    this.state.setCols(numCols)
 
+    this.state = new TextWindow('ddll')
+    this.state.setRowsCols(numRows,numCols);
+    console.log("inside the constructor!!!!")
+    console.dir(this.state)
+
+    // this.state =
+    //    {text:[""],
+    //     cursor:[0,0],
+    //     rowOffset:0,
+    //     colOffset:0,
+    //     rows:numRows,cols:numCols}
 
     let theState = this.state
 
@@ -90,12 +123,12 @@ class CanvasEditor{
     // here is how we can get the position of the mouseclick
     this.msetCanvas.addEventListener('mousedown', function(event){
         let row = Math.floor(event.offsetY/msetCE.lineHeight)+
-                            msetCE.state.rowOffset
+                            msetCE.state.getRowOffset()
         let col = Math.round(event.offsetX/(msetCE.charWidth)) +
-                msetCE.state.colOffset
-        row = Math.min(row,msetCE.state.text.length-1)
-        col = Math.min(col,msetCE.state.text[row].length)
-        msetCE.state.cursor = [row,col]
+                msetCE.state.getColOffset()
+        row = Math.min(row,msetCE.state.getLastRow())
+        col = Math.min(col,msetCE.state.getRowLength(row))
+        msetCE.state.setCursor(row,col)
         msetCE.redrawmsetCanvas()
     });
 
@@ -119,6 +152,9 @@ class CanvasEditor{
       let numCols = Math.floor(this.msetCanvas.width/(this.charWidth))
       this.state.cols = numCols
       this.state.rows = numRows
+      //let state = this.state
+    //  console.dir(state)
+    //  state.setRowsCols(numRows,numCols)
 
       return this.ctx.measureText(this.letters);
   }
@@ -142,16 +178,19 @@ class CanvasEditor{
         // ^A beginning of line ^E end of line
         // ^D delete next character
       } else if (key=='ArrowLeft'){
-        if (state.cursor[1]>0){
-          const lineLen = state.text[state.cursor[0]].length
-          if (state.cursor[1]>lineLen){
-            state.cursor[1] = lineLen
-          }
-          state.cursor[1]--;
+        if (state.getCurrentCol()>0){
+          // const lineLen = state.getCurrentLineLength() //state.text[state.cursor[0]].length
+          // if (state.getCurrentCol()>lineLen){
+          //   state.setCurrentCol(lineLen) //state.cursor[1] = lineLen
+          // }
+          state.setCurrentCol(state.getCurrentCol()-1)
+          //state.cursor[1]--;
         } else {
-          if (state.cursor[0]>0) {
-            state.cursor[0]--
-            state.cursor[1] = state.text[state.cursor[0]].length
+          if (state.getCurrentRow() >0) {
+            state.setCurrentRow(state.getCurrentRow()-1)
+            state.setCurrentCol(state.getRowLength(state.getCurrentRow()))
+            // state.cursor[0]--
+            // state.cursor[1] = state.text[state.cursor[0]].length
           }
         }
         return
