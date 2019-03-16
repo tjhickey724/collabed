@@ -92,11 +92,8 @@ class TextWindow{
   }
 
   joinWithNextLine(row){
-    console.log("in joinWithNexLine")
-    console.log(JSON.stringify(this.text))
     this.text.splice(row,2,
       this.text[row]+ this.text[row+1])
-    console.log(JSON.stringify(this.text))
   }
 
   splitRow(row,pos){
@@ -151,8 +148,6 @@ class CanvasEditor{
     let numCols = Math.floor(this.msetCanvas.width/(this.charWidth))
 
     this.state.setRowsCols(numRows,numCols);
-    console.log("inside the constructor!!!!")
-    console.dir(this.state)
 
     // this.state =
     //    {text:[""],
