@@ -8,6 +8,7 @@ class TextWindow{
   /**
     This class will represent a text object and a window onto that text object
   **/
+
   constructor(ddll){
     this.string = ""
     this.text = [""]
@@ -115,7 +116,11 @@ class TextWindow{
   }
 
 }
-
+//================
+var
+htmlCanvas = document.getElementById('mset');
+context = htmlCanvas.getContext('2d');
+//================
 class CanvasEditor{
 
   constructor(mset,textWindow){
@@ -177,9 +182,14 @@ class CanvasEditor{
         msetCE.redrawmsetCanvas()
     });
 
+    // When the window is resized it changes the size of the canvas to fit the window
+    window.addEventListener('resize', function(event){
+      htmlCanvas.width = window.innerWidth*0.9;
+      htmlCanvas.height = window.innerHeight*0.9;
+      msetCE.redrawmsetCanvas();
+    });
+
   }
-
-
 
   getFontSize(){
 
@@ -326,12 +336,20 @@ class CanvasEditor{
       this.state.setCursor(row,col+1)
     }
 
+    //=============
+
+
     redrawmsetCanvas(){
       this.getFontSize()
       this.clearmsetCanvas()
       let theState = this.state
       const ctx = this.msetCanvas.getContext('2d')
       //ctx.font = fonttype
+      //===============
+      //context.strokeStyle = 'blue';
+      //context.lineWidth = '5';
+      //context.strokeRect(0, 0, window.innerWidth, window.innerHeight);
+      //===============
       ctx.fillStyle='black'
 
       if ((theState.getCurrentRow()<theState.getRowOffset())  ) {
@@ -375,6 +393,7 @@ class CanvasEditor{
 
 
     drawCursor(){
+
       const line =this.state.getCurrentLine()
       const col = this.state.getCurrentCol()
       const row = this.state.getCurrentRow()
