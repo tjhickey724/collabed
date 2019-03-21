@@ -4,13 +4,36 @@
 */
 console.log("In editor.js!!!!!")
 
+class DDLLstring{
+  constructor(){
+    this.string = ""
+  }
+
+  insertAtPos(char,pos){
+    this.string = this.string.substring(0,pos)+char+this.string.substring(pos)
+    console.log(JSON.stringify(this.string))
+  }
+
+  deleteFromPos(pos){
+    console.log(JSON.stringify(["in deleteFromPos",pos]))
+    console.log(this.string.substring(0,pos))
+    console.log(this.string.substring(pos+1))
+    this.string = this.string.substring(0,pos)+this.string.substring(pos+1)
+    console.log(JSON.stringify(this.string))
+  }
+
+  getString(){
+    return this.string
+  }
+}
+
 class TextWindow{
   /**
     This class will represent a text object and a window onto that text object
   **/
 
   constructor(ddll){
-    this.string = ""
+    this.string = new DDLLstring()
     this.text = [""]
     this.windowOffset = 0  // the position of 1st visible character in the windowOffset
     this.lastWindowOffset = 0
@@ -78,29 +101,51 @@ class TextWindow{
     this.cursor[1]= col
   }
 
-  insertChar(row,col,key){
+  insertChar(row,col,key){ // for a non CR key
+    const charPos = this.getCharPos(row,col)
     const line = this.getLine(row)
     const first = line.substring(0,col) // first part
     const rest = line.substring(col)
     const newline = first+key+rest
     this.text[row]=newline
+
+    this.string.insertAtPos(key,charPos)
   }
 
-  removeChar(row,col){
+  removeChar(row,col){ // for a non CR key
+    const charPos = this.getCharPos(row,col)
     const line = this.text[row]
     this.text.splice(row,1,
       line.substring(0,col-1)+line.substring(col))
+
+    this.string.deleteFromPos(charPos-1)
   }
 
-  joinWithNextLine(row){
+  joinWithNextLine(row){ // remove CR
+    const charPos = this.getCharPos(row+1,0)-1
     this.text.splice(row,2,
       this.text[row]+ this.text[row+1])
+
+    this.string.deleteFromPos(charPos)
   }
 
-  splitRow(row,pos){
+  splitRow(row,pos){ // insert CR
+    const charPos = this.getCharPos(row,pos)
     const line = this.text[row]
     this.text.splice(row,1,
       line.substring(0,pos),line.substring(pos))
+
+    this.string.insertAtPos('\n',charPos)
+  }
+
+  getCharPos(row,col){
+    let sum=0
+
+    for(let i=0; i<row; i++){
+      sum += this.text[i].length+1  // have to add 1 for the CR at the end of the line ...
+    }
+    sum += col
+    return sum
   }
 
   getLine(row){
@@ -117,9 +162,7 @@ class TextWindow{
 
 }
 //================
-var
-htmlCanvas = document.getElementById('mset');
-context = htmlCanvas.getContext('2d');
+
 //================
 class CanvasEditor{
 
@@ -141,6 +184,8 @@ class CanvasEditor{
     this.lineSep = 10
     this.lineHeight=20
     this.lineDescent = 2
+
+
     let msetCE = this
 
     this.fontSize = this.getFontSize()
@@ -184,9 +229,11 @@ class CanvasEditor{
 
     // When the window is resized it changes the size of the canvas to fit the window
     window.addEventListener('resize', function(event){
-      htmlCanvas.width = window.innerWidth*0.9;
-      htmlCanvas.height = window.innerHeight*0.9;
+      msetCE.msetCanvas.width = window.innerWidth*0.9;
+      msetCE.msetCanvas.height = window.innerHeight*0.9;
+      msetCE.getFontSize();
       msetCE.redrawmsetCanvas();
+
     });
 
   }
