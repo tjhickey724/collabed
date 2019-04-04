@@ -3,15 +3,31 @@
   and draw all of the lines. This should be pretty easy to do!
 */
 console.log("In editor.js!!!!!")
+let Zthis='zzz'
 
 class DDLLstring{
-  constructor(){
+  constructor(textWin){
     this.string = ""
+    this.textWin = textWin
   }
 
   insertAtPos(char,pos){
     this.string = this.string.substring(0,pos)+char+this.string.substring(pos)
+    console.log(JSON.stringify(['local',this.string]))
+  }
+
+  insertAtPosRemote(char,pos){
+    let rc = this.getRowCol(pos)
+
+    this.string = this.string.substring(0,pos)+char+this.string.substring(pos)
     console.log(JSON.stringify(this.string))
+
+    if (char=='\n'){
+      this.textWin.splitRow(rc[0],rc[1],'remote')
+    } else {
+      this.textWin.insertChar(rc[0],rc[1],char,'remote')
+    }
+    console.log(JSON.stringify(['remote',this.string]))
   }
 
   deleteFromPos(pos){
@@ -19,11 +35,48 @@ class DDLLstring{
     console.log(this.string.substring(0,pos))
     console.log(this.string.substring(pos+1))
     this.string = this.string.substring(0,pos)+this.string.substring(pos+1)
+    console.log(JSON.stringify(['local',this.string]))
+  }
+
+  deleteFromPosRemote(pos){
+    const char=this.string[pos]
+    let rc = this.getRowCol(pos)
+
+    console.log(JSON.stringify(["in deleteFromPos",pos]))
+    console.log(this.string.substring(0,pos))
+    console.log(this.string.substring(pos+1))
+    this.string = this.string.substring(0,pos)+this.string.substring(pos+1)
     console.log(JSON.stringify(this.string))
+    console.log(rc)
+
+    if (char=='\n'){
+      console.dir(['joinWithNextLine',rc[0]])
+      this.textWin.joinWithNextLine(rc[0],'remote')
+    }else {
+      console.dir(['removePrevChar',rc[0],rc[1]+1])
+      this.textWin.removePrevChar(rc[0],rc[1]+1,'remote')
+    }
+    console.log(JSON.stringify(['remote',this.string]))
   }
 
   getString(){
     return this.string
+  }
+
+  getRowCol(pos){
+    let row=0;
+    let col=0;
+    let p = 0;
+    while(p<pos){
+      if (this.string[p]=='\n'){
+        row += 1; col=0;
+      } else{
+        col+=1;
+      }
+      p++;
+    }
+    return [row,col]
+
   }
 }
 
@@ -33,7 +86,7 @@ class TextWindow{
   **/
 
   constructor(ddll){
-    this.string = new DDLLstring()
+    this.string = new DDLLstring(this)
     this.text = [""]
     this.windowOffset = 0  // the position of 1st visible character in the windowOffset
     this.lastWindowOffset = 0
@@ -47,6 +100,10 @@ class TextWindow{
   setRowsCols(rows,cols){
     this.rows = rows
     this.cols = cols
+  }
+
+  getString(){
+    return this.string
   }
 
   getNumRows(){
@@ -101,42 +158,50 @@ class TextWindow{
     this.cursor[1]= col
   }
 
-  insertChar(row,col,key){ // for a non CR key
+  insertChar(row,col,key,remote){ // for a non CR key
     const charPos = this.getCharPos(row,col)
     const line = this.getLine(row)
     const first = line.substring(0,col) // first part
     const rest = line.substring(col)
     const newline = first+key+rest
     this.text[row]=newline
-
-    this.string.insertAtPos(key,charPos)
+    if (!remote){
+      this.string.insertAtPos(key,charPos)
+    }
   }
 
-  removeChar(row,col){ // for a non CR key
-    const charPos = this.getCharPos(row,col)
-    const line = this.text[row]
-    this.text.splice(row,1,
-      line.substring(0,col-1)+line.substring(col))
-
-    this.string.deleteFromPos(charPos-1)
-  }
-
-  joinWithNextLine(row){ // remove CR
-    const charPos = this.getCharPos(row+1,0)-1
-    this.text.splice(row,2,
-      this.text[row]+ this.text[row+1])
-
-    this.string.deleteFromPos(charPos)
-  }
-
-  splitRow(row,pos){ // insert CR
+  splitRow(row,pos,remote){ // insert CR
     const charPos = this.getCharPos(row,pos)
     const line = this.text[row]
     this.text.splice(row,1,
       line.substring(0,pos),line.substring(pos))
-
-    this.string.insertAtPos('\n',charPos)
+    if (!remote){
+      this.string.insertAtPos('\n',charPos)
+    }
   }
+
+  removePrevChar(row,col,remote){ // for a non CR key
+    const charPos = this.getCharPos(row,col)
+    const line = this.text[row]
+    this.text.splice(row,1,
+      line.substring(0,col-1)+line.substring(col))
+    if (!remote){
+      this.string.deleteFromPos(charPos-1)
+    }
+
+  }
+
+  joinWithNextLine(row,remote){ // remove CR
+    const charPos = this.getCharPos(row+1,0)-1
+    this.text.splice(row,2,
+      this.text[row]+ this.text[row+1])
+    if (!remote){
+      this.string.deleteFromPos(charPos)
+    }
+
+  }
+
+
 
   getCharPos(row,col){
     let sum=0
@@ -357,7 +422,7 @@ class CanvasEditor{
         this.state.setCurrentCol(col)
       }
       if (col>0){
-        this.state.removeChar(row,col)
+        this.state.removePrevChar(row,col)
         this.state.setCursor(row,col-1)
       } else if(row>0){
         const prevLine = this.state.getLine(row-1)
@@ -461,4 +526,5 @@ class CanvasEditor{
 }
 
 const tw = new TextWindow("dummy DDLL")
+const st = tw.getString();
 const ed1 = new CanvasEditor(mset,tw)
