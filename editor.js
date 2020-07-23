@@ -13,22 +13,47 @@ class DDLLstring{
 
   insertAtPos(char,pos){
     this.string = this.string.substring(0,pos)+char+this.string.substring(pos)
-    console.log(JSON.stringify(['local',this.string]))
+    console.log(JSON.stringify(['local-pre',this.string,this.textWin.cursorPos,this.textWin.cursor]))
+
+    if (pos<=this.textWin.cursorPos) {
+      console.log(`before incrementing ${this.textWin.cursorPos}`)
+      this.textWin.cursorPos += 1
+      console.log(`after incrementing ${this.textWin.cursorPos}`)
+      this.textWin.setCursorRC(this.getRowCol(this.textWin.cursorPos))
+    }
+
+    console.log(JSON.stringify(['local-post',this.string,this.textWin.cursorPos,this.textWin.cursor]))
+
   }
 
   insertAtPosRemote(char,pos){
     let rc = this.getRowCol(pos)
+
 
     this.string = this.string.substring(0,pos)+char+this.string.substring(pos)
     console.log(JSON.stringify(this.string))
 
     if (char=='\n'){
       this.textWin.splitRow(rc[0],rc[1],'remote')
+      if (rc[0] < this.textWin.rowOffset){
+        this.textWin.rowOffset++
+      }
     } else {
       this.textWin.insertChar(rc[0],rc[1],char,'remote')
     }
     console.log(JSON.stringify(['remote',this.string]))
-    this.textWin.redraw('insert',char,rc)  // modify so that it only redraws if rc is in visible range
+
+
+    if (pos<this.textWin.cursorPos) {
+      this.textWin.cursorPos++
+      this.textWin.setCursorRC(this.getRowCol(this.textWin.cursorPos))
+    }
+    if (pos<=this.textWin.windowOffset){
+      this.textWin.windowOffset += 1
+    }
+
+    this.textWin.redraw()  // modify so that it only redraws if rc is in visible range
+
   }
 
   deleteFromPos(pos){
@@ -37,6 +62,11 @@ class DDLLstring{
     console.log(this.string.substring(pos+1))
     this.string = this.string.substring(0,pos)+this.string.substring(pos+1)
     console.log(JSON.stringify(['local',this.string]))
+
+    if (pos<this.textWin.cursorPos) {
+      this.textWin.cursorPos--
+      this.textWin.setCursorRC(this.getRowCol(this.textWin.cursorPos))
+    }
   }
 
   deleteFromPosRemote(pos){
@@ -53,12 +83,24 @@ class DDLLstring{
     if (char=='\n'){
       console.dir(['joinWithNextLine',rc[0]])
       this.textWin.joinWithNextLine(rc[0],'remote')
+      if (rc[0] < this.textWin.rowOffset){
+        this.textWin.rowOffset--
+      }
     }else {
       console.dir(['removePrevChar',rc[0],rc[1]+1])
       this.textWin.removePrevChar(rc[0],rc[1]+1,'remote')
     }
     console.log(JSON.stringify(['remote',this.string]))
-    this.textWin.redraw('delete',char,rc)  // modify so that it only redraws if rc is in visible range
+
+    if (pos<this.textWin.cursorPos) {
+      this.textWin.cursorPos--
+      this.textWin.setCursorRC(this.getRowCol(this.textWin.cursorPos))
+    }
+    if (pos<=this.textWin.windowOffset){
+      this.textWin.windowOffset -= 1
+    }
+    this.textWin.redraw()
+
   }
 
   getString(){
@@ -106,6 +148,7 @@ class TextWindow{
     this.windowOffset = 0  // the position of 1st visible character in the windowOffset
     this.lastWindowOffset = 0
     this.cursor = [0,0]
+    this.cursorPos = 0 //
     this.rowOffset=0
     this.colOffset=0
     this.rows = 10
@@ -116,7 +159,19 @@ class TextWindow{
     this.redrawCanvas = redraw
   }
 
+  updateCursorPos(){
+    this.cursor = getRowCol(this.cursorPos)
+  }
+
   redraw(operation,char,rowCol){
+    /*
+      before we redraw we have to adjust the cursor position
+      the tricky part is that the operation has already been performed!
+      we are getting the row/col info from before the operation!
+      Perhaps we should keep track of the cursor by its charOffset
+      and then recalculate row/col based on that...
+    */
+    /*
     const r = rowCol[0]
     const c = rowCol[1]
     console.log(`redraw(${operation},${char},[${r},${c}])`)
@@ -159,10 +214,6 @@ class TextWindow{
     if ((char != '\n') && r==this.cursor[0] && c<this.cursor[1]){
       this.cursor[1] += (operation=='insert')?1:-1
     }
-    /*
-      Also need to deal with the case where the delete or insert moves the cursor
-      past the right or left edges of the screen...
-
     */
     this.redrawCanvas()
   }
@@ -210,6 +261,11 @@ class TextWindow{
 
   setCursor(row,col){
     this.cursor = [row,col]
+    this.cursorPos = this.getCharPos(this.cursor[0],this.cursor[1])
+  }
+
+  setCursorRC(rc){
+    this.cursor = rc
   }
 
   getCurrentRow(){
@@ -218,6 +274,7 @@ class TextWindow{
 
   setCurrentRow(row){
     this.cursor[0] = row
+    this.cursorPos = this.getCharPos(this.cursor[0],this.cursor[1])
   }
 
   getCurrentCol(){
@@ -226,6 +283,7 @@ class TextWindow{
 
   setCurrentCol(col){
     this.cursor[1]= col
+    this.cursorPos = this.getCharPos(this.cursor[0],this.cursor[1])
   }
 
   insertChar(row,col,key,remote){ // for a non CR key
