@@ -28,6 +28,7 @@ class DDLLstring{
       this.textWin.insertChar(rc[0],rc[1],char,'remote')
     }
     console.log(JSON.stringify(['remote',this.string]))
+    this.textWin.redraw('insert',char,rc)  // modify so that it only redraws if rc is in visible range
   }
 
   deleteFromPos(pos){
@@ -57,6 +58,7 @@ class DDLLstring{
       this.textWin.removePrevChar(rc[0],rc[1]+1,'remote')
     }
     console.log(JSON.stringify(['remote',this.string]))
+    this.textWin.redraw('delete',char,rc)  // modify so that it only redraws if rc is in visible range
   }
 
   getString(){
@@ -80,6 +82,19 @@ class DDLLstring{
   }
 }
 
+/*
+TextWindow models the state of the document.
+It receives calls from the Editor using row/col coordinates
+for inserting and deleting characters. It translates these into
+position based calls and in turn makes calls to the DDLLstring object
+which updates the MSET representation of the document and sends MSET
+transformations corresponding to the inserts or deletes to the network.
+
+Likewise, when the DDLLstring object receives an insert or delete operation
+from the network, it makes calls to this TextWindow object to update the
+state and to redraw the canvas.  Note that the DDLLstring object and the
+TextWindow object both have links to each other.
+*/
 class TextWindow{
   /**
     This class will represent a text object and a window onto that text object
@@ -95,6 +110,61 @@ class TextWindow{
     this.colOffset=0
     this.rows = 10
     this.cols = 80
+  }
+
+  setRedrawCanvas(redraw){
+    this.redrawCanvas = redraw
+  }
+
+  redraw(operation,char,rowCol){
+    const r = rowCol[0]
+    const c = rowCol[1]
+    console.log(`redraw(${operation},${char},[${r},${c}])`)
+    console.log(`char='\n' ==> ${char=='\n'}`)
+    if (operation=='insert'){
+      if (char=='\n'){
+        if (r<this.rowOffset){
+          this.rowOffset += 1
+        }
+        console.log(`inserted newline r=${r} c=${c} cursor=[${this.cursor[0]},${this.cursor[1]}]`)
+        if (r < this.cursor[0]){
+          console.log("incrementing cursor due to new line insertion")
+          this.cursor[0] += 1
+        } else if (r==this.cursor[0] && c <= this.cursor[1]) {
+          this.cursor[0] += 1
+          this.cursor[1] -= c
+        }
+      }
+
+      this.windowOffset += 1
+
+    } else if (operation=='delete'){
+      if (char=='\n'){
+        if (r < this.rowOffset){
+          this.rowOffset -= 1
+        }
+        console.log(`deleted newline r=${r} c=${c} cursor=[${this.cursor[0]},${this.cursor[1]}]`)
+        if (r==this.cursor[0]-1) {// merge this line to previous line
+          this.cursor[0] -=1
+          this.cursor[1] += this.getLine(r).length
+        } else if (r < this.cursor[0]-1){
+          this.cursor[0] -= 1
+          console.log("decrementing cursor due to new line deletion")
+        }
+
+      }
+      this.windowOffset -= 1
+
+    }
+    if ((char != '\n') && r==this.cursor[0] && c<this.cursor[1]){
+      this.cursor[1] += (operation=='insert')?1:-1
+    }
+    /*
+      Also need to deal with the case where the delete or insert moves the cursor
+      past the right or left edges of the screen...
+
+    */
+    this.redrawCanvas()
   }
 
   setRowsCols(rows,cols){
@@ -229,6 +299,17 @@ class TextWindow{
 //================
 
 //================
+/*
+The Canvas Editor takes a canvas DOM objects, mset,
+and a TextWindow object representing the state of the document.
+It responds to canvas events by calling methods on the TextWindow
+object to update its state, and it redraws the screen using data
+from the TextWindow object.
+
+When the TextWindow object is updated remotely, it will also redraw
+the screen. This is done by passing the redraw method into the TextWindow
+object.
+*/
 class CanvasEditor{
 
   constructor(mset,textWindow){
@@ -300,6 +381,9 @@ class CanvasEditor{
       msetCE.redrawmsetCanvas();
 
     });
+
+    const redrawCanvas = this.redrawmsetCanvas.bind(this)
+    this.state.setRedrawCanvas(redrawCanvas)
 
   }
 
